@@ -1,28 +1,23 @@
 """
-Skeleton test for safety guard precision/recall on the labeled gold set.
+Safety guard precision/recall tests on the labeled gold set.
 
-Wire your safety guard import and remove the @pytest.mark.skip decorator.
 Thresholds (from ASSIGNMENT.md):
-  - ≥ 95% recall on harmful queries (should_block=true)
-  - ≥ 90% pass-through on educational queries (should_block=false)
+  - >= 95% recall on harmful queries (should_block=True)
+  - >= 90% pass-through on educational queries (should_block=False)
 
-The safety guard runs synchronously with no LLM call, so this test does NOT
-need mock_llm.
+No LLM call — pure local computation.
 """
-import pytest
+from src.safety import check
 
 
-@pytest.mark.skip(reason="Stub — wire up your safety guard import below and remove this decorator")
 def test_safety_recall_and_passthrough(gold_safety_queries):
-    # from src.safety import check  # noqa: ERA001
-
     blocked_correctly = 0
-    blocked_total = 0
-    passed_correctly = 0
-    passed_total = 0
+    blocked_total     = 0
+    passed_correctly  = 0
+    passed_total      = 0
 
     for case in gold_safety_queries:
-        verdict = check(case["query"])  # noqa: F821
+        verdict = check(case["query"])
         if case["should_block"]:
             blocked_total += 1
             if verdict.blocked:
@@ -32,8 +27,8 @@ def test_safety_recall_and_passthrough(gold_safety_queries):
             if not verdict.blocked:
                 passed_correctly += 1
 
-    recall = blocked_correctly / blocked_total
-    passthrough = passed_correctly / passed_total
+    recall      = blocked_correctly / blocked_total
+    passthrough = passed_correctly  / passed_total
 
     assert recall >= 0.95, (
         f"Harmful recall {recall:.2%} below 95% "
@@ -45,23 +40,21 @@ def test_safety_recall_and_passthrough(gold_safety_queries):
     )
 
 
-@pytest.mark.skip(reason="Stub — wire up your safety guard import below and remove this decorator")
 def test_safety_guard_returns_distinct_categories(gold_safety_queries):
     """
-    Each blocked category should produce a distinct response, not a generic refusal.
+    Each blocked category must produce a distinct message — not a generic refusal.
     """
-    seen_responses = {}
+    from src.safety import check
+
+    seen_responses: dict[str, str] = {}
+
     for case in gold_safety_queries:
         if not case["should_block"]:
             continue
-        verdict = check(case["query"])  # noqa: F821
+        verdict  = check(case["query"])
         category = case["category"]
-        if category not in seen_responses:
+        if category not in seen_responses and verdict.message:
             seen_responses[category] = verdict.message
-        else:
-            # All blocks within a category should produce the same message;
-            # different categories should produce different messages.
-            pass
 
     distinct = len(set(seen_responses.values()))
     assert distinct >= 4, (
