@@ -83,8 +83,9 @@ def _process(request: QueryRequest) -> dict[str, Any]:
         query=request.query,
         prior_turns=prior_turns,
     )
+    logger.info("CLASSIFIER RESULT: intent=%s agent=%s", classifier_result.intent, classifier_result.agent)
 
-    # 4. Route
+    # 4. Routes
     user     = _resolve_user(request)
     response = route(classifier_result, user=user)
 

@@ -5,13 +5,13 @@ Returns a ClassifierResult with: intent, agent, entities, safety_verdict.
 On any LLM failure → falls back to general_query (never crashes).
 
 Accepts optional `llm` parameter so tests can inject a mock
-without setting OPENAI_API_KEY.
+without setting GEMINI_API_KEY.
 """
 from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 from src.models import ClassifierEntities, ClassifierResult
 
@@ -69,16 +69,22 @@ Agent taxonomy:
 """ + "\n".join(f"- {k}: {v}" for k, v in AGENT_TAXONOMY.items())
 
 
-def _build_messages(query: str, prior_turns: list[str]) -> list[dict]:
-    messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
+def _build_prompt(query: str, prior_turns: list[str]) -> str:
+    parts = [_SYSTEM_PROMPT, "\n\n"]
     for turn in prior_turns[-4:]:
-        messages.append({"role": "user", "content": turn})
-    messages.append({"role": "user", "content": query})
-    return messages
+        parts.append(f"Previous turn: {turn}\n")
+    parts.append(f"User query: {query}")
+    return "".join(parts)
 
 
 def _parse_response(raw: str) -> ClassifierResult:
-    data = json.loads(raw)
+    # Strip markdown code fences if model wraps in ```json ... ```
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    data = json.loads(raw.strip())
     entities_raw = data.get("entities", {})
     entities_clean = {k: v for k, v in entities_raw.items() if v is not None}
     return ClassifierResult(
@@ -111,7 +117,7 @@ def classify(
     query       : The user's message.
     prior_turns : Previous user turns in the session (for follow-up resolution).
     llm         : Optional injectable LLM callable (used in tests to mock).
-                  If None, uses the real OpenAI client.
+                  If None, uses the real Gemini client.
 
     Returns
     -------
@@ -121,7 +127,7 @@ def classify(
 
     try:
         if llm is not None:
-            # Test / mock path
+            # Test / mock path — unchanged
             raw = llm(query=query, prior_turns=prior_turns)
             if isinstance(raw, dict):
                 return ClassifierResult(
@@ -134,20 +140,23 @@ def classify(
                 return raw
             return _fallback(query)
 
-        # Real OpenAI path
-        import openai
-        client = openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        messages = _build_messages(query, prior_turns)
+        # ── Gemini path ──────────────────────────────────────────────────────
+        from google import genai
+        from google.genai import types
 
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            response_format={"type": "json_object"},
-            temperature=0,
-            max_tokens=400,
+        client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        prompt = _build_prompt(query, prior_turns)
+
+        response = client.models.generate_content(
+            model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0,
+                max_output_tokens=400,
+                response_mime_type="application/json",
+            ),
         )
-        raw_content = response.choices[0].message.content
+        raw_content = response.text
         return _parse_response(raw_content)
 
     except Exception as exc:
