@@ -17,7 +17,8 @@ _CATEGORIES: dict[str, dict] = {
     "insider_trading": {
         "block_patterns": [
             r"\b(i\s+work\s+at|my\s+friend\s+at|tip\s+from|inside\s+information"
-            r"|confidential\s+(merger|acquisition|deal)"
+            r"|confidential\s+(merger|acquisition|deal|news)"
+            r"|merger\s+news\s+from\s+my"
             r"|unannounced\s+(acquisition|earnings|deal)"
             r"|trade\s+on\s+(this|confidential|non.?public)"
             r"|earnings\s+before\s+(tomorrow|the\s+announcement)"
@@ -57,7 +58,7 @@ _CATEGORIES: dict[str, dict] = {
     },
     "money_laundering": {
         "block_patterns": [
-            r"\b(move\s+.{0,30}\s+without\s+reporting|structure\s+deposits"
+            r"\b(move\s+.{0,60}\s+without\s+reporting|structure\s+deposits"
             r"|avoid\s+(the\s+)?10[k,]?\s+reporting|layer\s+.{0,30}\s+obscure"
             r"|hide\s+(trading\s+profits?|funds?|money)"
             r"|hide\s+.{0,20}(profits?|income|funds?)\s+from\s+(the\s+)?(tax|authorities)"
