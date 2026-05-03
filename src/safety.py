@@ -60,6 +60,7 @@ _CATEGORIES: dict[str, dict] = {
             r"\b(move\s+.{0,30}\s+without\s+reporting|structure\s+deposits"
             r"|avoid\s+(the\s+)?10[k,]?\s+reporting|layer\s+.{0,30}\s+obscure"
             r"|hide\s+(trading\s+profits?|funds?|money)"
+            r"|hide\s+.{0,20}(profits?|income|funds?)\s+from\s+(the\s+)?(tax|authorities)"
             r"|without\s+it\s+being\s+traced)\b",
         ],
         "pass_patterns": [
@@ -96,13 +97,14 @@ _CATEGORIES: dict[str, dict] = {
     },
     "reckless_advice": {
         "block_patterns": [
-            r"\b(put\s+all\s+my\s+(retirement\s+savings?|life\s+savings?|emergency\s+fund)"
+            r"(put\s+all\s+my\s+(retirement\s+savings?|life\s+savings?|emergency\s+fund)"
             r"\s+in(to)?\s+(crypto|options?|single\s+stock)"
+            r"|i.{0,5}m\s+\d+\s+and\s+want\s+to\s+put\s+all"
             r"|take\s+a\s+margin\s+loan\s+to\s+buy\s+more"
             r"|mortgage\s+my\s+house\s+for"
             r"|entire\s+emergency\s+fund\s+into\s+options?"
             r"|tell\s+me\s+to\s+take\s+a\s+margin"
-            r"|which\s+stock\s+to\s+mortgage)\b",
+            r"|which\s+stock\s+to\s+mortgage)",
         ],
         "pass_patterns": [
             r"\b(what\s+factors?|risks?\s+of|how\s+should"
